@@ -1,0 +1,204 @@
+---
+title: "Plot Maps for Fall 2024 Argiope Field Season at Reller Prairie"
+author: "Brandi Pessman"
+date: "2024-09-18"
+output: html_document
+---
+
+Load the necessary libraries. Use `install.packages("package_name")` before `library(package_name)` if you do not have the package. 
+
+```{r load libraries}
+library(tidyverse) # to wrangle and graph
+library(readxl) # to read in the excel files
+library(sf) # to add trail shapefiles
+library(ggrepel) # only if you want to add site labels
+library(ggpattern)
+```
+
+Import the coordinates and trails.
+
+```{r plots and trails import}
+# Plots
+coordA <- read_excel("mapA.xlsx")
+coordB <- read_excel("mapB.xlsx")
+#Trails
+main_trailsA <- st_read("plotA_trails.shp")
+temp_trailsA <- st_read("plotA_temp_trails.shp")
+main_trailsB <- st_read("plotB_trails.shp")
+temp_trailsB <- st_read("plotB_temp_trails.shp")
+# Enclosures/Camps
+enclosure_camp <- read_excel("enclosure_camp.xlsx") %>% 
+  filter(Enclosure == "Camp")
+```
+
+Create a map. 
+
+```{r nebraska lancaster reller map}
+nebraska_map <- map_data("state") %>% 
+  filter(region == "nebraska") 
+
+lan_map <- map_data("county") %>% 
+  filter(region == "nebraska", 
+         subregion == "lancaster")
+
+reller <- data.frame(lat = c(40.61760, 40.61760, 40.61042, 40.61042),
+                     long = c(-96.76250, -96.75790, -96.75790, -96.76250))
+
+ggplot() +
+  geom_polygon(aes(x = long, y = lat), fill = "grey", color = "black", data = nebraska_map) +
+  geom_polygon(aes(x = long, y = lat), fill = NA, color = "black", , data = lan_map) +
+  geom_point(aes(x = long, y = lat), size = 3, shape = 15, fill = "darkgreen", color = "darkgreen", data = reller) +
+  theme_void() 
+```
+
+Add plot A to the map.
+
+```{r plot A}
+ggplot() +
+  geom_point(aes(x = long, y = lat), color = "white", data = coordA, size = 1) +
+  geom_sf(data = main_trailsA, aes(linetype = "Main Trails"), color = "grey") +  
+  geom_sf(data = temp_trailsA, aes(linetype = "Temporary Trails"), color = "grey") +  
+  #geom_label_repel(aes(label = Site), segment.color = "white", size = 2) +
+  ggsn::scalebar(data = coordA, location = "bottomleft", dist = 2,
+  dist_unit = "m", transform = TRUE,  model = "WGS84", st.size = 4, border.size = 0.5, st.color = "white", box.color = "white") +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  scale_linetype_manual(values = c("Main Trails" = "solid", "Temporary Trails" = "dashed")) + 
+  guides(linetype = guide_legend(title = NULL)) + 
+  theme_classic() +
+  theme(axis.text = element_text(size = 14, color = "black"),
+        axis.title = element_text(size = 14, color = "black"),
+        axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5),
+        panel.background = element_rect(fill = "darkgreen",
+                                        colour = "darkgreen",
+                                        linewidth = 0.5, linetype = "solid"),
+        legend.position = "inside", 
+        legend.position.inside = c(1, 0),  
+        legend.justification.inside = c(1, 0), 
+        legend.background = element_rect(fill = "transparent"),
+        legend.text = element_text(color = "white", size = 12),
+        legend.box.background = element_rect(colour = "black", fill = "darkgreen")) 
+```
+
+Add plot B to the map. 
+
+```{r plot B}
+ggplot() +
+  geom_point(aes(x = long, y = lat), color = "white", data = coordB, size = 1) +
+  geom_sf(data = main_trailsB, aes(linetype = "Main Trails"), color = "grey") +  
+  geom_sf(data = temp_trailsB, aes(linetype = "Temporary Trails"), color = "grey") +  
+  #geom_label_repel(aes(label = Site), segment.color = "white", size = 2) +
+  ggsn::scalebar(data = coordB, location = "bottomleft", dist = 2,
+  dist_unit = "m", transform = TRUE,  model = "WGS84", st.size = 4, border.size = 0.5, st.color = "white", box.color = "white") +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  scale_linetype_manual(values = c("Main Trails" = "solid", "Temporary Trails" = "dashed")) +
+  guides(linetype = guide_legend(title = NULL)) + 
+  theme_classic() +
+  theme(axis.text = element_text(size = 14, color = "black"),
+        axis.title = element_text(size = 14, color = "black"),
+        axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5),
+        panel.background = element_rect(fill = "darkgreen",
+                                        colour = "darkgreen",
+                                        linewidth = 0.5, linetype = "solid"),
+        legend.position = "inside", 
+        legend.position.inside = c(1, 0),  
+        legend.justification.inside = c(1, 0), 
+        legend.background = element_rect(fill = "transparent"),
+        legend.text = element_text(color = "white", size = 12),
+        legend.box.background = element_rect(colour = "black", fill = "darkgreen")) 
+```
+
+Add plot A and B to the map.
+
+```{r both plots}
+ggplot() +
+  geom_point(aes(x = long, y = lat), 
+             color = "white", 
+             size = 0.75, 
+             data = coordA) +
+  geom_point(aes(x = long, y = lat), 
+             color = "white", 
+             size = 0.75, 
+             data = coordB) +
+  geom_polygon_pattern(aes(x = Long, y = Lat, group = Enclosure), 
+                       pattern = "stripe", 
+                       fill = NA, 
+                       pattern_fill = "darkgrey", 
+                       pattern_color = "darkgrey", 
+                       color = "darkgrey", 
+                       pattern_density = 0.1, 
+                       pattern_spacing = 0.01, 
+                       data = enclosure_camp) +
+  geom_sf(aes(linetype = "Main Trails"), 
+          color = "grey",
+          data = main_trailsA) +  
+  geom_sf(aes(linetype = "Temporary Trails"), 
+          color = "grey",
+          data = temp_trailsA) + 
+  geom_sf(aes(linetype = "Main Trails"), 
+          color = "grey",
+          data = main_trailsB) +  
+  geom_sf(aes(linetype = "Temporary Trails"), 
+          color = "grey",
+          data = temp_trailsB) + 
+  annotate("text", 
+          x = -96.758625, 
+          y = 40.612540, 
+          label = "Plot A", 
+          color = "darkgrey", 
+          size = 7, 
+          hjust = 1) +
+  annotate("text", 
+          x = -96.758625, 
+          y = 40.612050, 
+          label = "Plot B", 
+          color = "darkgrey", 
+          size = 7, 
+          hjust = 1) +
+  annotate("text", 
+           x = -96.758670, 
+           y = 40.612280, 
+           label = "Camp", 
+           color = "darkgrey", 
+           size = 5, 
+           hjust = 1) +
+  #geom_label_repel(aes(x = long, y = lat, label = Site), data = coordA, segment.color = "white", size = 2) +
+  ggsn::scalebar(location = "bottomleft", 
+                 dist = 3, 
+                 dist_unit = "m", 
+                 transform = TRUE,  
+                 model = "WGS84", 
+                 st.size = 4, 
+                 border.size = 0.5, 
+                 st.color = "white", 
+                 box.color = "white",
+                 x.min = -96.758820,
+                 x.max = -96.758350,
+                 y.min = 40.611980,
+                 y.max = 40.612700) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  scale_linetype_manual(values = c("Main Trails" = "solid", "Temporary Trails" = "dashed")) +
+  guides(linetype = guide_legend(title = NULL)) + 
+  theme_classic() +
+  theme(axis.text = element_text(size = 14, 
+                                 color = "black"),
+        axis.title = element_text(size = 14, 
+                                  color = "black"),
+        axis.text.x = element_text(angle = 45, 
+                                   vjust = 0.5, 
+                                   hjust = 0.5),
+        panel.background = element_rect(fill = "darkgreen",
+                                        colour = "darkgreen",
+                                        linewidth = 0.5, 
+                                        linetype = "solid"),
+        legend.position = "inside", 
+        legend.position.inside = c(1, 0),  
+        legend.justification.inside = c(1, 0), 
+        legend.background = element_rect(fill = "transparent"),
+        legend.text = element_text(color = "white", 
+                                   size = 12),
+        legend.box.background = element_rect(colour = "black", 
+                                             fill = "darkgreen")) 
+```
